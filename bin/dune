@@ -1,0 +1,4 @@
+(executable
+ (public_name ogl_renderer)
+ (name main)
+ (libraries ogl_renderer))
