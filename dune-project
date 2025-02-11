@@ -17,7 +17,10 @@
  (name ogl_renderer)
  (synopsis "OCaml OpenGL renderer")
  (description "This is a simple OpenGL renderer written in OCaml.")
- (depends ocaml)
+ (depends
+  ocaml
+  lablgl
+ )
  (tags
   ("opengl" "renderer" )))
 
