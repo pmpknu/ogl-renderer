@@ -41,6 +41,58 @@ end = struct
   let unit v = v / length v
   let dot (a1, a2, a3) (b1, b2, b3) = (a1 *. b1) +. (a2 *. b2) +. (a3 *. b3)
 
-  (* ppx inline tests *)
+  let%test "mk and raw" = 
+    let v = mk (1., 2., 3.) in
+    raw v = (3., 2., 3.)
+
+  let%test "c1, c2, c3" =
+    let v = mk (1., 2., 3.) in
+    c1 v = 1. && c2 v = 2. && c3 v = 3.
+
+  let%test "addition" =
+    let v1 = mk (1., 2., 3.) in
+    let v2 = mk (4., 5., 6.) in
+    raw (v1 + v2) = (5., 7., 9.)
+
+  let%test "subtraction" =
+    let v1 = mk (5., 5., 5.) in
+    let v2 = mk (1., 2., 3.) in
+    raw (v1 - v2) = (4., 3., 2.)
+
+  let%test "negation" =
+    let v = mk (1., -2., 3.) in
+    raw (-v) = (-1., 2., -3.)
+
+  let%test "scalar multiplication (float)" =
+    let v = mk (1., 2., 3.) in
+    raw (2.5 * v) = (2.5, 5., 7.5)
+
+  let%test "scalar multiplication (int)" =
+    let v = mk (1., 2., 3.) in
+    raw (2 *! v) = (2., 4., 6.)
+
+  let%test "division by float" =
+    let v = mk (10., 20., 30.) in
+    raw (v / 2.0) = (5., 10., 15.)
+
+  let%test "division by int" =
+    let v = mk (10., 20., 30.) in
+    raw (v /! 2) = (5., 10., 15.)
+
+  let%test "length square" =
+    let v = mk (3., 4., 0.) in
+    length_square v = 25.
+
+  let%test "unit vector" =
+    let v = mk (3., 4., 0.) in
+    let u = unit v in
+    let (x, y, z) = raw u in
+    let approx a b = Float.abs (a -. b) < 1e-10 in
+    approx x 0.6 && approx y 0.8 && approx z 0.0
+
+  let%test "dot product" =
+    let v1 = mk (1., 2., 3.) in
+    let v2 = mk (4., 5., 6.) in
+    dot v1 v2 = 32.
 end
 
