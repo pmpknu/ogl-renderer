@@ -20,6 +20,8 @@
  (depends
   ocaml
   lablgl
+  owl
+  ppx_inline_test
  )
  (tags
   ("opengl" "renderer" )))

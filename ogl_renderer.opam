@@ -12,6 +12,8 @@ depends: [
   "dune" {>= "3.17"}
   "ocaml"
   "lablgl"
+  "owl"
+  "ppx_inline_test"
   "odoc" {with-doc}
 ]
 build: [
