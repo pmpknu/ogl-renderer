@@ -1,4 +1,4 @@
 (executable
  (public_name ogl_renderer)
  (name main)
- (libraries ogl_renderer lablgl lablgl.glut))
+ (libraries ogl_renderer glfw-ocaml tgls.tgl3))

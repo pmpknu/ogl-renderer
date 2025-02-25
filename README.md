@@ -3,9 +3,9 @@ OCaml OpenGL renderer
 
 # deps
 
-> owl 1.2 + lapacke-3.12.1-2
+> glfw-ocaml 3.3.1-2
 
-> lablgl 1.07
+> tgls 0.8.6
 
 > ocaml 5.0.0
 
