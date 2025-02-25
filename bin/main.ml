@@ -15,6 +15,40 @@ let glsl_version gl_version = match gl_version with
   | 4,0 -> "400" | 4,1 -> "410" | 4,2 -> "420" | 4,3 -> "430" | 4,4 -> "440" | 4,5 -> "450" | 4,6 -> "460"
   | _ -> assert false
 
+let check_shader_compilation shader =
+  let open Tgl3.Gl in
+  let status = bigarray_create Bigarray.int32 1 in
+  get_shaderiv shader compile_status status;
+  if Int32.to_int status.{0} = 0 then (
+    let log_length = bigarray_create Bigarray.int32 1 in
+    get_shaderiv shader info_log_length log_length;
+    let length = Int32.to_int log_length.{0} in
+    let log = bigarray_create Bigarray.char length in
+    get_shader_info_log shader length None log;
+    let log_str = Bytes.create length in
+    for i = 0 to length - 1 do
+      Bytes.set log_str i (Bigarray.Array1.get log i)
+    done;
+    Printf.eprintf "Shader compilation failed: %s\n" (Bytes.to_string log_str);
+  )
+
+let check_program_linking program =
+  let open Tgl3.Gl in
+  let status = bigarray_create Bigarray.int32 1 in
+  get_programiv program link_status status;
+  if Int32.to_int status.{0} = 0 then (
+    let log_length = bigarray_create Bigarray.int32 1 in
+    get_programiv program info_log_length log_length;
+    let length = Int32.to_int log_length.{0} in
+    let log = bigarray_create Bigarray.char length in
+    get_program_info_log program length None log;
+    let log_str = Bytes.create length in
+    for i = 0 to length - 1 do
+      Bytes.set log_str i (Bigarray.Array1.get log i)
+    done;
+    Printf.eprintf "Program linking failed: %s\n" (Bytes.to_string log_str);
+  )
+
 let vertex_shader v = Printf.sprintf "
     #version %s core
     in vec3 vertex;
@@ -44,20 +78,23 @@ let () =
 
   let vertexShaderSource = vertex_shader (glsl_version (4, 6)) in
   let vertexShader = Tgl3.Gl.create_shader Tgl3.Gl.vertex_shader in
-  Tgl3.Gl.shader_source Tgl3.Gl.vertex_shader vertexShaderSource;
-  Tgl3.Gl.compile_shader Tgl3.Gl.vertex_shader;
+  Tgl3.Gl.shader_source vertexShader vertexShaderSource;
+  Tgl3.Gl.compile_shader vertexShader;
+  check_shader_compilation vertexShader;
 
   let fragmentShaderSource = fragment_shader (glsl_version (4, 6)) in
   let fragmentShader = Tgl3.Gl.create_shader Tgl3.Gl.fragment_shader in
-  Tgl3.Gl.shader_source Tgl3.Gl.fragment_shader fragmentShaderSource;
-  Tgl3.Gl.compile_shader Tgl3.Gl.fragment_shader;
+  Tgl3.Gl.shader_source fragmentShader fragmentShaderSource;
+  Tgl3.Gl.compile_shader fragmentShader;
+  check_shader_compilation fragmentShader;
 
   let shaderProgram = Tgl3.Gl.create_program () in
-  Tgl3.Gl.attach_shader shaderProgram Tgl3.Gl.vertex_shader;   Tgl3.Gl.delete_shader vertexShader;
-  Tgl3.Gl.attach_shader shaderProgram Tgl3.Gl.fragment_shader; Tgl3.Gl.delete_shader fragmentShader;
+  Tgl3.Gl.attach_shader shaderProgram vertexShader;
+  Tgl3.Gl.attach_shader shaderProgram fragmentShader;
   Tgl3.Gl.bind_attrib_location shaderProgram 0 "vertex";
   Tgl3.Gl.bind_attrib_location shaderProgram 1 "color";
   Tgl3.Gl.link_program shaderProgram;
+  check_program_linking shaderProgram;
 
   Tgl3.Gl.delete_shader vertexShader;
   Tgl3.Gl.delete_shader fragmentShader;
