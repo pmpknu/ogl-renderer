@@ -64,13 +64,14 @@ let fragment_shader v = Printf.sprintf "
     #version %s core
     in vec4 v_color;
     out vec4 color;
-    void main() { color = vec4(1.0f, 0.5f, 0.2f, 1.0f); }" v
+    void main() { color = v_color; }" v
 
 let vertices = Bigarray.Array1.of_array Bigarray.float32 Bigarray.c_layout [|
-    0.5;  0.5; 0.0;
-    0.5; -0.5; 0.0;
-   -0.5; -0.5; 0.0;
-   -0.5;  0.5; 0.0;
+    (* positions    |      colors *)
+    0.5;  0.5; 0.0;   1.0; 0.0; 0.0; (* top right *)
+    0.5; -0.5; 0.0;   0.0; 1.0; 0.0; (* bottom right *)
+   -0.5; -0.5; 0.0;   0.0; 0.0; 1.0; (* bottom left *)
+   -0.5;  0.5; 0.0;   1.0; 1.0; 0.0; (* top left *)
 |]
 
 let indices = Bigarray.Array1.of_array Bigarray.int32 Bigarray.c_layout [|
@@ -126,8 +127,13 @@ let () =
   Tgl3.Gl.buffer_data Tgl3.Gl.element_array_buffer (Bigarray.Array1.size_in_bytes indices) (Some indices) Tgl3.Gl.static_draw;
 
   (* 3. then set the vertex attributes pointers *)
-  Tgl3.Gl.vertex_attrib_pointer 0 3 Tgl3.Gl.float false (3*4) (`Offset 0);
+  Tgl3.Gl.vertex_attrib_pointer 0 3 Tgl3.Gl.float false (6*4) (`Offset 0);
   Tgl3.Gl.enable_vertex_attrib_array 0;
+
+  Tgl3.Gl.vertex_attrib_pointer 1 3 Tgl3.Gl.float false (6*4) (`Offset (3*4));
+  Tgl3.Gl.enable_vertex_attrib_array 1;
+
+  (* 4. Unbind VBO (it's always a good thing to unbind any buffer/array to prevent strange bugs) *)
 
   Tgl3.Gl.bind_buffer Tgl3.Gl.array_buffer 0;
   (* 4. Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs) *)
