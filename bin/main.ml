@@ -4,52 +4,54 @@ let main () =
   Glut.initWindowSize ~w:500 ~h:500;
   ignore (Glut.createWindow ~title:"lablglut & LablGL");
 
-  let vertexShaderSource = "
-    #version 460 core\n
-    layout (location = 0) in vec3 aPos;\n
-    void main()\n
-    {\n
-      gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n
-    }\0";
-  let vertexShader = GlShader.create `vertex in
-  GlShader.source vertexShader vertexShaderSource;
-  GlShader.compile vertexShader;
+  let vertexShaderSource = {|
+    #version 460 core
+    layout (location = 0) in vec3 aPos;
+    void main()
+    {
+      gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+    }
+  |} in
+  let vertexShader = GlShader.create ~shader_type:`vertex_shader in
+  GlShader.source ~shader:vertexShader vertexShaderSource;
+  GlShader.compile ~shader:vertexShader;
 
-  let fragmentShaderSource = "
-    #version 460 core\n
-    out vec4 FragColor;\n
-    void main()\n
-    {\n
-      FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n
-    }\0";
-  let fragmentShader = GlShader.create `fragment in
-  GlShader.source fragmentShader fragmentShaderSource;
-  GlShader.compile fragmentShader;
+  let fragmentShaderSource = {|
+    #version 460 core
+    out vec4 FragColor;
+    void main()
+    {
+      FragColor = vec4(1.0, 0.5f, 0.2f, 1.0f);
+    }
+  |} in
+  let fragmentShader = GlShader.create  ~shader_type:`fragment_shader in
+  GlShader.source ~shader:fragmentShader fragmentShaderSource;
+  GlShader.compile ~shader:fragmentShader;
 
-  let shaderProgram = Gl.create_program () in
-  Gl.attach_shader shaderProgram vertexShader;
-  Gl.attach_shader shaderProgram fragmentShader;
-  Gl.link_program shaderProgram;
+  let shaderProgram = GlShader.create_program () in
+  GlShader.attach ~program:shaderProgram ~shader:vertexShader;
+  GlShader.attach ~program:shaderProgram ~shader:fragmentShader;
+  GlShader.link_program ~program:shaderProgram;
 
-  Gl.delete_shader vertexShader;
-  Gl.delete_shader fragmentShader;
+  GlShader.delete ~shader:vertexShader;
+  GlShader.delete ~shader:fragmentShader;
 
-  let vertices = [|
+  (* 1. Gl bind Vertex Array Object *)
+  let vao = GlArray.gen_vertex_array () in
+  GlArray.bind_vertex_array vao;
+
+  (* 2. copy our vertices array in a buffer for OpenGL to use*)
+  let vbo = GlArray.create_buffer () in
+  GlArray.bind_buffer `array vbo;
+  let vertices = Bigarray.Array1.of_array Bigarray.float32 Bigarray.c_layout [|
     -0.5; -0.5; 0.0;
     0.5; -0.5; 0.0;
     0.0;  0.5; 0.0
-  |];
+  |] in
+  GlArray.buffer `array (Bigarray.Array1.dim vertices * 4) (`data (Bigarray.genarray_of_array1 vertices)) `static_draw;
 
-  (* 1. Gl bind Vertex Array Object *)
-  let vao = GlArray.create_vertex_array () in
-  GlArray.bind_vertex_array vao;
 
-  (** 2. copy our vertices array in a buffer for OpenGL to use*)
-  let vbo = GlArray.create_buffer () in
-  GlArray.bind_buffer `array vbo;
-  GlArray.buffer_data `array (`float (`data vertices)) `static_draw;
-
-  (** 3. then set the vertex attributes pointers *)
+  (* 3. then set the vertex attributes pointers *)
   GlArray.vertex_attrib_pointer 0 3 `float false 0 (`offset 0);
   GlArray.enable_vertex_attrib_array 0;
 
@@ -60,11 +62,11 @@ let main () =
       GlDraw.color (1.0, 1.0, 1.0);
       GlMat.mode `projection;
 
-      (** 4. use our shader program when we want to render an object *)
-      Gl.use_program shaderProgram;
+      (* 4. use our shader program when we want to render an object *)
+      GlShader.use_program shaderProgram;
       GlArray.bind_vertex_array vao;
 
-      (** 5. now draw the object *)
+      (* 5. now draw the object *)
       GlDraw.draw_arrays `triangles 0 3;
 
       Gl.flush ();
