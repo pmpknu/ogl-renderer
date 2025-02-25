@@ -10,6 +10,28 @@ let get_int =
   let a = bigarray_create Bigarray.int32 1 in
   fun f -> f a; Int32.to_int a.{0}
 
+let glsl_version gl_version = match gl_version with
+  | 3,2 -> "150" | 3,3 -> "330"
+  | 4,0 -> "400" | 4,1 -> "410" | 4,2 -> "420" | 4,3 -> "430" | 4,4 -> "440" | 4,5 -> "450" | 4,6 -> "460"
+  | _ -> assert false
+
+let vertex_shader v = Printf.sprintf "
+    #version %s core
+    in vec3 vertex;
+    in vec3 color;
+    out vec4 v_color;
+    void main()
+    {
+      v_color = vec4(color, 1.0);
+      gl_Position = vec4(vertex, 1.0);
+    }" v
+  
+let fragment_shader v = Printf.sprintf "
+    #version %s core
+    in vec4 v_color;
+    out vec4 color;
+    void main() { color = v_color; }" v
+
 let () =
   GLFW.init ();
   GLFW.windowHint ~hint:GLFW.ContextVersionMajor ~value:3;
@@ -20,53 +42,21 @@ let () =
   GLFW.makeContextCurrent ~window:(Some window);
   (*GLFW.setFramebufferSizeCallback ~window:window ~f:(framebuffer_size_callback);*)
 
-  let vertexShaderSource = {|
-    #version 460 core
-    layout (location = 0) in vec3 aPos;
-    void main()
-    {
-      gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-    }
-  |} in
+  let vertexShaderSource = vertex_shader (glsl_version (4, 6)) in
   let vertexShader = Tgl3.Gl.create_shader Tgl3.Gl.vertex_shader in
   Tgl3.Gl.shader_source Tgl3.Gl.vertex_shader vertexShaderSource;
-
-  let check_shader_compilation shader =
-    let open Tgl3.Gl in
-    let status = bigarray_create Bigarray.int32 1 in
-    get_shaderiv shader compile_status status;
-    if Int32.to_int status.{0} = 0 then (
-      let log_length = bigarray_create Bigarray.int32 1 in
-      get_shaderiv shader info_log_length log_length;
-      let length = Int32.to_int log_length.{0} in
-      let log = bigarray_create Bigarray.char length in
-      get_shader_info_log shader length None log;
-      let log_str = Bytes.create length in
-      for i = 0 to length - 1 do
-        Bytes.set log_str i (Bigarray.Array1.get log i)
-      done;
-      Printf.eprintf "Shader compilation failed: %s\n" (Bytes.to_string log_str);
-    )
-  in
   Tgl3.Gl.compile_shader Tgl3.Gl.vertex_shader;
-  check_shader_compilation vertexShader;
 
-  let fragmentShaderSource = {|
-    #version 460 core
-    out vec4 FragColor;
-    void main()
-    {
-      FragColor = vec4(1.0, 0.5f, 0.2f, 1.0f);
-    }
-  |} in
+  let fragmentShaderSource = fragment_shader (glsl_version (4, 6)) in
   let fragmentShader = Tgl3.Gl.create_shader Tgl3.Gl.fragment_shader in
   Tgl3.Gl.shader_source Tgl3.Gl.fragment_shader fragmentShaderSource;
   Tgl3.Gl.compile_shader Tgl3.Gl.fragment_shader;
-  check_shader_compilation fragmentShader;
 
   let shaderProgram = Tgl3.Gl.create_program () in
-  Tgl3.Gl.attach_shader shaderProgram Tgl3.Gl.vertex_shader;
-  Tgl3.Gl.attach_shader shaderProgram Tgl3.Gl.fragment_shader;
+  Tgl3.Gl.attach_shader shaderProgram Tgl3.Gl.vertex_shader;   Tgl3.Gl.delete_shader vertexShader;
+  Tgl3.Gl.attach_shader shaderProgram Tgl3.Gl.fragment_shader; Tgl3.Gl.delete_shader fragmentShader;
+  Tgl3.Gl.bind_attrib_location shaderProgram 0 "vertex";
+  Tgl3.Gl.bind_attrib_location shaderProgram 1 "color";
   Tgl3.Gl.link_program shaderProgram;
 
   Tgl3.Gl.delete_shader vertexShader;
