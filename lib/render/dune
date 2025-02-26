@@ -1,0 +1,5 @@
+(library
+ (name render)
+ (modules shader)
+ (libraries glfw-ocaml tgls.tgl3)
+)
