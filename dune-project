@@ -19,8 +19,6 @@
  (description "This is a simple OpenGL renderer written in OCaml.")
  (depends
   ocaml
-  lablgl
-  owl
   ppx_inline_test
  )
  (tags
