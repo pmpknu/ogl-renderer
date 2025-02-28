@@ -24,6 +24,7 @@ module type Matr_sig = sig
   val point_transform : t -> vec3 -> vec3
   val vector_transform : t -> vec3 -> vec3
   val lerp : t -> t -> float -> t
+  val of_bigarray : t -> (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array1.t
 end
 
 module Matr : Matr_sig with type vec3 = Vec3.t = struct
@@ -264,4 +265,14 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
       m10 m11 m12 m13
       m20 m21 m22 m23
       m30 m31 m32 m33
+
+  let of_bigarray matrix =
+    let open Bigarray in
+    let arr = Array1.create Float32 C_layout 16 in
+    for i = 0 to 3 do
+      for j = 0 to 3 do
+        arr.{i * 4 + j} <- matrix.m.(i).(j)
+      done
+    done;
+    arr
 end

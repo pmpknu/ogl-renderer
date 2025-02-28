@@ -1,5 +1,5 @@
 open Render
-open Math.Transform
+open Math.Mat
 
 let glsl_version gl_version = match gl_version with
   | 3,2 -> "150" | 3,3 -> "330"
@@ -104,18 +104,17 @@ let () =
     Tgl3.Gl.active_texture Tgl3.Gl.texture0;
     Texture.bind texture;
 
-    (* Create transformation *)
-    let trans = Matrix.translation 0.5 (-.0.5) 0.0 in
-    let rot = Matrix.rotation 0.0 0.0 1.0 (GLFW.getTime ()) in
-    let scale = Matrix.scaling 1.0 1.0 1.0 in
-    let m = Matrix.combine trans (Matrix.combine rot scale) in
-
     (* Use Shader Program *)
     Shader.use shaderProgram;
 
     (* Set Uniforms *)
+    (* Create transformation *)
+    let trans = Matr.translate (0.5, (-.0.5), 0.0) in
+    let rot = Matr.rotate (0.0, 0.0, 1.0) (GLFW.getTime ()) in
+    let scale = Matr.scale (1.0, 1.0, 1.0) in
+    let m = Matr.identity () |> Matr.mult trans |> Matr.mult rot |> Matr.mult scale in
     let transformLoc = Tgl3.Gl.get_uniform_location shaderProgram "transform" in
-    Tgl3.Gl.uniform_matrix4fv transformLoc 1 false (Matrix.gl m);
+    Tgl3.Gl.uniform_matrix4fv transformLoc 1 false (Matr.of_bigarray m);
 
     (* Draw *)
     Tgl3.Gl.bind_vertex_array vao;
