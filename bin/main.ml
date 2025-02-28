@@ -55,6 +55,42 @@ let camera_pos = ref (0.0, 0.0, -3.0)
 let camera_front = ref (0.0, 0.0, -1.0)
 let camera_up = ref (0.0, 1.0, 0.0)
 let camera_speed = 0.05
+let first_mouse = ref true
+let last_x = ref 0.0
+let last_y = ref 0.0
+let yaw = ref (-90.0)
+let pitch = ref 0.0
+let radians degrees = degrees *. Float.pi /. 180.0
+
+let mouse_callback _ xpos_in ypos_in =
+  let xpos = xpos_in in
+  let ypos = ypos_in in
+
+  if !first_mouse then (
+    last_x := xpos;
+    last_y := ypos;
+    first_mouse := false
+  );
+
+  let xoffset = xpos -. !last_x in
+  let yoffset = !last_y -. ypos in
+  last_x := xpos;
+  last_y := ypos;
+
+  let sensitivity = 0.1 in
+  let xoffset = xoffset *. sensitivity in
+  let yoffset = yoffset *. sensitivity in
+
+  yaw := !yaw +. xoffset;
+  pitch := !pitch +. yoffset;
+
+  let pitch = if !pitch > 89.0 then 89.0 else if !pitch < -89.0 then -89.0 else !pitch in
+
+  let front_x = cos (radians !yaw) *. cos (radians pitch) in
+  let front_y = sin (radians pitch) in
+  let front_z = sin (radians !yaw) *. cos (radians pitch) in
+  let front = (front_x, front_y, front_z) in
+  camera_front := Vec3.normalize front
 
 let process_input window =
   if GLFW.getKey ~window:window ~key:GLFW.Escape then
@@ -68,8 +104,12 @@ let process_input window =
   if GLFW.getKey ~window:window ~key:GLFW.D then
     camera_pos := Vec3.add !camera_pos (Vec3.mul right camera_speed);
   if GLFW.getKey ~window:window ~key:GLFW.A then
-    camera_pos := Vec3.sub !camera_pos (Vec3.mul right camera_speed)
+    camera_pos := Vec3.sub !camera_pos (Vec3.mul right camera_speed);
 
+  if GLFW.getMouseButton ~window:window ~button:GLFW.mouse_button_left then
+    ignore (GLFW.setCursorPosCallback ~window ~f:(Some mouse_callback))
+  else
+    ignore (GLFW.setCursorPosCallback ~window ~f:(Some (fun _ _ _ -> (last_x := 0.0; last_y := 0.0; first_mouse := true))))
 
 let () =
   GLFW.init ();
