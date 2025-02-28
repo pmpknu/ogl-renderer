@@ -1,6 +1,7 @@
 open Render
 open Math.Mat
 open Math.Cam
+open Math.Vec
 
 let glsl_version gl_version = match gl_version with
   | 3,2 -> "150" | 3,3 -> "330"
@@ -49,6 +50,26 @@ let indices = Bigarray.Array1.of_array Bigarray.int32 Bigarray.c_layout [|
   Int32.of_int 0; Int32.of_int 1; Int32.of_int 3;
   Int32.of_int 1; Int32.of_int 2; Int32.of_int 3;
 |]
+
+let camera_pos = ref (0.0, 0.0, -3.0)
+let camera_front = ref (0.0, 0.0, -1.0)
+let camera_up = ref (0.0, 1.0, 0.0)
+let camera_speed = 0.05
+
+let process_input window =
+  if GLFW.getKey ~window:window ~key:GLFW.Escape then
+    GLFW.setWindowShouldClose ~window:window ~b:true;
+
+  let right = Vec3.normalize (Vec3.cross !camera_front !camera_up) in
+  if GLFW.getKey ~window:window ~key:GLFW.W then
+    camera_pos := Vec3.sub !camera_pos (Vec3.mul !camera_front camera_speed);
+  if GLFW.getKey ~window:window ~key:GLFW.S then
+    camera_pos := Vec3.add !camera_pos (Vec3.mul !camera_front camera_speed);
+  if GLFW.getKey ~window:window ~key:GLFW.D then
+    camera_pos := Vec3.add !camera_pos (Vec3.mul right camera_speed);
+  if GLFW.getKey ~window:window ~key:GLFW.A then
+    camera_pos := Vec3.sub !camera_pos (Vec3.mul right camera_speed)
+
 
 let () =
   GLFW.init ();
@@ -100,6 +121,8 @@ let () =
   Tgl3.Gl.uniform1i (Tgl3.Gl.get_uniform_location shaderProgram "texture1") 0;
 
   while not (GLFW.windowShouldClose ~window:window) do
+    process_input window;
+
     Tgl3.Gl.clear_color 0.239 0.30 0.49 1.0;
     Tgl3.Gl.clear Tgl3.Gl.color_buffer_bit;
 
@@ -114,12 +137,14 @@ let () =
     (* Rotate the model matrix *)
     let model = Matr.rotate (1.0, 0.0, 0.0) (-55.0) in
 
-    (* Translate the view matrix *)
-    let view = Matr.translate (0.0, 0.0, (-3.0)) in
-
     (* Create the projection matrix *)
     let camera = Camera.create () in
+    let camera = Camera.set_loc_at_up camera !camera_pos (Vec3.add !camera_pos !camera_front) !camera_up in
+
+    (* Retrieve the matrix uniform locations *)
+    let view = Camera.get_view camera in
     let projection = Camera.get_proj camera in
+
     (* Retrieve the matrix uniform locations *)
     let model_loc = Tgl3.Gl.get_uniform_location shaderProgram "model" in
     let view_loc = Tgl3.Gl.get_uniform_location shaderProgram "view" in

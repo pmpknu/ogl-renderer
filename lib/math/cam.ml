@@ -69,8 +69,9 @@ module Camera : Camera_sig with type vec3 = Vec3.t and type matr = Matr.t = stru
     let size = 0.1 in
     let frame_w = 30 in
     let frame_h = 30 in
-    let camera = { loc; dir; up; right; at; proj_dist; far_clip; size; frame_w; frame_h; view = Matr.identity(); proj = Matr.identity(); vp = Matr.identity() } in
-    update_proj (update_view camera)
+    let view = Matr.translate (0.0, 0.0, (-3.0)) in
+    let camera = { loc; dir; up; right; at; proj_dist; far_clip; size; frame_w; frame_h; view; proj = Matr.identity(); vp = Matr.identity() } in
+    update_proj (camera)
 
   let set_proj camera new_size new_proj_dist new_far_clip =
     let camera = { camera with size = new_size; proj_dist = new_proj_dist; far_clip = new_far_clip } in
