@@ -1,4 +1,5 @@
 open Render
+open Math.Transform
 
 let glsl_version gl_version = match gl_version with
   | 3,2 -> "150" | 3,3 -> "330"
@@ -11,22 +12,27 @@ let vertex_shader v = Printf.sprintf "
     in vec3 vertex;
     in vec3 color;
     in vec2 texCoord;
+    uniform mat4 transform;
     out vec4 v_color;
     out vec2 TexCoord;
     void main()
     {
       v_color = vec4(color, 1.0);
+      gl_Position = transform * vec4(vertex, 1.0);
       TexCoord = texCoord;
-      gl_Position = vec4(vertex, 1.0);
     }" v
-  
+
 let fragment_shader v = Printf.sprintf "
     #version %s core
     in vec4 v_color;
     in vec2 TexCoord;
-    out vec4 color;
     uniform sampler2D texture1;
-    void main() { color = texture(texture1, TexCoord) * v_color; }" v
+    out vec4 color;
+    void main()
+    {
+      color = texture(texture1, TexCoord) * v_color;
+    }" v
+
 
 let vertices = Bigarray.Array1.of_array Bigarray.float32 Bigarray.c_layout [|
     (* positions    |      colors       | texture coords *)
@@ -47,7 +53,7 @@ let () =
   GLFW.windowHint ~hint:GLFW.ContextVersionMinor ~value:3;
   GLFW.windowHint ~hint:GLFW.OpenGLProfile ~value:GLFW.CoreProfile;
 
-  let window = GLFW.createWindow ~width:800 ~height:600 ~title:"LearnOpenGL" () in
+  let window = GLFW.createWindow ~width:800 ~height:600 ~title:"ocaml opengl" () in
   GLFW.makeContextCurrent ~window:(Some window);
 
   let vertexShaderSource = vertex_shader (glsl_version (4, 6)) in
@@ -86,7 +92,7 @@ let () =
   (* Tgl3.Gl.polygon_mode Tgl3.Gl.front_and_back Tgl3.Gl.line; *)
 
   (* Load Texture *)
-  let texture = Texture.load_texture "resources/mario.png" in
+  let texture = Texture.load_texture "resources/albedo.jpg" in
   Shader.use shaderProgram;
   Tgl3.Gl.uniform1i (Tgl3.Gl.get_uniform_location shaderProgram "texture1") 0;
 
@@ -98,8 +104,18 @@ let () =
     Tgl3.Gl.active_texture Tgl3.Gl.texture0;
     Texture.bind texture;
 
+    (* Create transformation *)
+    let trans = Matrix.translation 0.5 (-.0.5) 0.0 in
+    let rot = Matrix.rotation 0.0 0.0 1.0 (GLFW.getTime ()) in
+    let scale = Matrix.scaling 1.0 1.0 1.0 in
+    let m = Matrix.combine trans (Matrix.combine rot scale) in
+
     (* Use Shader Program *)
     Shader.use shaderProgram;
+
+    (* Set Uniforms *)
+    let transformLoc = Tgl3.Gl.get_uniform_location shaderProgram "transform" in
+    Tgl3.Gl.uniform_matrix4fv transformLoc 1 false (Matrix.gl m);
 
     (* Draw *)
     Tgl3.Gl.bind_vertex_array vao;
