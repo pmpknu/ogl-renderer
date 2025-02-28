@@ -61,11 +61,16 @@ let last_y = ref 0.0
 let yaw = ref (-90.0)
 let pitch = ref 0.0
 let radians degrees = degrees *. Float.pi /. 180.0
+let fov = ref 0.1
+let scroll_callback _ _ yoffset =
+  fov := !fov -. yoffset *. 0.05;
 
-let mouse_callback _ xpos_in ypos_in =
-  let xpos = xpos_in in
-  let ypos = ypos_in in
+  if !fov < 0.0 then
+    fov := 0.0
+  else if !fov > 1.0 then
+    fov := 1.0
 
+let mouse_callback _ xpos ypos =
   if !first_mouse then (
     last_x := xpos;
     last_y := ypos;
@@ -119,6 +124,9 @@ let () =
 
   let window = GLFW.createWindow ~width:800 ~height:600 ~title:"ocaml opengl" () in
   GLFW.makeContextCurrent ~window:(Some window);
+
+  ignore (GLFW.setFramebufferSizeCallback ~window ~f:(Some (fun _ w h -> Tgl3.Gl.viewport 0 0 w h)));
+  ignore (GLFW.setScrollCallback ~window ~f:(Some scroll_callback));
 
   let vertexShaderSource = vertex_shader (glsl_version (4, 6)) in
   let fragmentShaderSource = fragment_shader (glsl_version (4, 6)) in
@@ -180,6 +188,7 @@ let () =
     (* Create the projection matrix *)
     let camera = Camera.create () in
     let camera = Camera.set_loc_at_up camera !camera_pos (Vec3.add !camera_pos !camera_front) !camera_up in
+    let camera = Camera.set_proj camera !fov 0.1 1000.0 in
 
     (* Retrieve the matrix uniform locations *)
     let view = Camera.get_view camera in
