@@ -1,5 +1,6 @@
 open Render
 open Math.Mat
+open Math.Cam
 
 let glsl_version gl_version = match gl_version with
   | 3,2 -> "150" | 3,3 -> "330"
@@ -12,13 +13,15 @@ let vertex_shader v = Printf.sprintf "
     in vec3 vertex;
     in vec3 color;
     in vec2 texCoord;
-    uniform mat4 transform;
+    uniform mat4 model;
+    uniform mat4 view;
+    uniform mat4 projection;
     out vec4 v_color;
     out vec2 TexCoord;
     void main()
     {
       v_color = vec4(color, 1.0);
-      gl_Position = transform * vec4(vertex, 1.0);
+      gl_Position = projection * view * model * vec4(vertex, 1.0);
       TexCoord = texCoord;
     }" v
 
@@ -108,13 +111,24 @@ let () =
     Shader.use shaderProgram;
 
     (* Set Uniforms *)
-    (* Create transformation *)
-    let trans = Matr.translate (0.5, (-.0.5), 0.0) in
-    let rot = Matr.rotate (0.0, 0.0, 1.0) (GLFW.getTime ()) in
-    let scale = Matr.scale (1.0, 1.0, 1.0) in
-    let m = Matr.identity () |> Matr.mult trans |> Matr.mult rot |> Matr.mult scale in
-    let transformLoc = Tgl3.Gl.get_uniform_location shaderProgram "transform" in
-    Tgl3.Gl.uniform_matrix4fv transformLoc 1 false (Matr.of_bigarray m);
+    (* Rotate the model matrix *)
+    let model = Matr.rotate (1.0, 0.0, 0.0) (-55.0) in
+
+    (* Translate the view matrix *)
+    let view = Matr.translate (0.0, 0.0, (-3.0)) in
+
+    (* Create the projection matrix *)
+    let camera = Camera.create () in
+    let projection = Camera.get_proj camera in
+    (* Retrieve the matrix uniform locations *)
+    let model_loc = Tgl3.Gl.get_uniform_location shaderProgram "model" in
+    let view_loc = Tgl3.Gl.get_uniform_location shaderProgram "view" in
+    let projection_loc = Tgl3.Gl.get_uniform_location shaderProgram "projection" in
+
+    (* Pass the matrices to the shaders *)
+    Tgl3.Gl.uniform_matrix4fv model_loc 1 false (Matr.of_bigarray model);
+    Tgl3.Gl.uniform_matrix4fv view_loc 1 false (Matr.of_bigarray view);
+    Tgl3.Gl.uniform_matrix4fv projection_loc 1 false (Matr.of_bigarray projection);
 
     (* Draw *)
     Tgl3.Gl.bind_vertex_array vao;

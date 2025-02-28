@@ -9,6 +9,7 @@ module type Matr_sig = sig
               -> float -> float -> float -> float
               -> float -> float -> float -> float
               -> float -> float -> float -> float -> t
+  val get : t -> int -> int -> float
   val translate : vec3 -> t
   val scale : vec3 -> t
   val rotate : vec3 -> float -> t
@@ -46,6 +47,8 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
       inv_a = Array.make_matrix 4 4 0.0;
       is_inverse_evaluated = false;
     }
+
+  let get matrix i j = matrix.m.(i).(j)
 
   let identity () = create
     1. 0. 0. 0.
