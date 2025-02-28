@@ -1,5 +1,4 @@
 (library
  (name render)
  (modules shader texture)
- (libraries glfw-ocaml tgls.tgl3 stb_image)
-)
+ (libraries glfw-ocaml tgls.tgl3 stb_image))

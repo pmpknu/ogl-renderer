@@ -12,6 +12,10 @@ depends: [
   "dune" {>= "3.17"}
   "ocaml"
   "ppx_inline_test"
+  "conf-assimp"
+  "glfw-ocaml"
+  "stb_image"
+  "tgls"
   "odoc" {with-doc}
 ]
 build: [

@@ -20,6 +20,10 @@
  (depends
   ocaml
   ppx_inline_test
+  conf-assimp
+  glfw-ocaml
+  stb_image
+  tgls
  )
  (tags
   ("opengl" "renderer" )))

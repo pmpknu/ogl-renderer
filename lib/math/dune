@@ -1,9 +1,7 @@
 (library
  (name math)
  (modules vec mat cam)
- (libraries owl owl-base)
  (inline_tests
   (flags (-verbose)))
  (preprocess
-  (pps ppx_inline_test))
-)
+  (pps ppx_inline_test)))
