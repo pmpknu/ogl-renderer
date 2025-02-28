@@ -29,8 +29,8 @@ end
 module Matr : Matr_sig with type vec3 = Vec3.t = struct
   type vec3 = Vec3.t
   type t = {
-    mutable m : float array array;
-    mutable inv_a : float array array;
+    m : float array array;
+    inv_a : float array array;
     mutable is_inverse_evaluated : bool;
   }
 
@@ -221,7 +221,6 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
       (Vec3.dot t r) (Vec3.dot t u) (Vec3.dot t d) 1.0
 
   let frustum l r b t n f =
-    let open Float in
     let two_n = 2.0 *. n in
     let rml = r -. l in
     let tmb = t -. b in
@@ -233,7 +232,6 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
       0.0 0.0 (-.(two_n *. f) /. fmn) 0.0
 
   let ortho l r b t n f =
-    let open Float in
     let rml = r -. l in
     let tmb = t -. b in
     let fmn = f -. n in
