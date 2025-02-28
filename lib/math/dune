@@ -1,6 +1,6 @@
 (library
  (name math)
- (modules transform)
+ (modules vec mat)
  (libraries owl owl-base)
  (inline_tests
   (flags (-verbose)))

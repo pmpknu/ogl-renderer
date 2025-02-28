@@ -77,7 +77,6 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
     -. a13 *. a22 *. a31
 
   let determ m =
-    let open Float in
     let m = m.m in
     let d0 = determ3x3 m.(1).(1) m.(1).(2) m.(1).(3)
                          m.(2).(1) m.(2).(2) m.(2).(3)
@@ -124,29 +123,30 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
 
   let transform_normal matrix normal =
     evaluate_inverse matrix;
-    let open Vec3 in
-    let x = x normal *. matrix.inv_a.(0).(0) +. y normal *. matrix.inv_a.(0).(1) +. z normal *. matrix.inv_a.(0).(2) in
-    let y = x normal *. matrix.inv_a.(1).(0) +. y normal *. matrix.inv_a.(1).(1) +. z normal *. matrix.inv_a.(1).(2) in
-    let z = x normal *. matrix.inv_a.(2).(0) +. y normal *. matrix.inv_a.(2).(1) +. z normal *. matrix.inv_a.(2).(2) in
-    Vec3.create x y z
+    let x = Vec3.x normal *. matrix.inv_a.(0).(0) +. Vec3.y normal *. matrix.inv_a.(0).(1) +. Vec3.z normal *. matrix.inv_a.(0).(2) in
+    let y = Vec3.x normal *. matrix.inv_a.(1).(0) +. Vec3.y normal *. matrix.inv_a.(1).(1) +. Vec3.z normal *. matrix.inv_a.(1).(2) in
+    let z = Vec3.x normal *. matrix.inv_a.(2).(0) +. Vec3.y normal *. matrix.inv_a.(2).(1) +. Vec3.z normal *. matrix.inv_a.(2).(2) in
+    (x, y, z)
 
   let point_transform matrix v =
     let open Vec3 in
     let x = x v and y = y v and z = z v in
     let m = matrix.m in
-    Vec3.create
-      (x *. m.(0).(0) +. y *. m.(1).(0) +. z *. m.(2).(0) +. m.(3).(0))
-      (x *. m.(0).(1) +. y *. m.(1).(1) +. z *. m.(2).(1) +. m.(3).(1))
+    (
+      (x *. m.(0).(0) +. y *. m.(1).(0) +. z *. m.(2).(0) +. m.(3).(0)),
+      (x *. m.(0).(1) +. y *. m.(1).(1) +. z *. m.(2).(1) +. m.(3).(1)),
       (x *. m.(0).(2) +. y *. m.(1).(2) +. z *. m.(2).(2) +. m.(3).(2))
+    )
 
   let vector_transform matrix v =
     let open Vec3 in
     let x = x v and y = y v and z = z v in
     let m = matrix.m in
-    Vec3.create
-      (x *. m.(0).(0) +. y *. m.(1).(0) +. z *. m.(2).(0))
-      (x *. m.(0).(1) +. y *. m.(1).(1) +. z *. m.(2).(1))
+    (
+      (x *. m.(0).(0) +. y *. m.(1).(0) +. z *. m.(2).(0)),
+      (x *. m.(0).(1) +. y *. m.(1).(1) +. z *. m.(2).(1)),
       (x *. m.(0).(2) +. y *. m.(1).(2) +. z *. m.(2).(2))
+    )
 
   let mult_vec matrix v =
     let open Vec3 in
@@ -156,7 +156,7 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
     let x' = (x *. m.(0).(0) +. y *. m.(1).(0) +. z *. m.(2).(0) +. m.(3).(0)) /. w in
     let y' = (x *. m.(0).(1) +. y *. m.(1).(1) +. z *. m.(2).(1) +. m.(3).(1)) /. w in
     let z' = (x *. m.(0).(2) +. y *. m.(1).(2) +. z *. m.(2).(2) +. m.(3).(2)) /. w in
-    Vec3.create x' y' z'
+    (x', y', z')
 
   let mult a b =
     let res = Array.make_matrix 4 4 0.0 in
@@ -215,9 +215,9 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
     let u = Vec3.cross r d in
     let t = Vec3.neg loc in
     create
-      r.x u.x (-.d.x) 0.0
-      r.y u.y (-.d.y) 0.0
-      r.z u.z (-.d.z) 0.0
+      (Vec3.x r) (Vec3.x u) (-.(Vec3.x d)) 0.0
+      (Vec3.y r) (Vec3.y u) (-.(Vec3.y d)) 0.0
+      (Vec3.z r) (Vec3.z u) (-.(Vec3.z d)) 0.0
       (Vec3.dot t r) (Vec3.dot t u) (Vec3.dot t d) 1.0
 
   let frustum l r b t n f =
@@ -244,7 +244,6 @@ module Matr : Matr_sig with type vec3 = Vec3.t = struct
       (-.(r +. l) /. rml) (-.(t +. b) /. tmb) (-.(n +. f) /. fmn) 1.0
 
   let lerp start end_ t =
-    let open Float in
     let t' = 1.0 -. t in
     let m00 = end_.m.(0).(0) *. t +. start.m.(0).(0) *. t' in
     let m01 = end_.m.(0).(1) *. t +. start.m.(0).(1) *. t' in
