@@ -19,9 +19,11 @@ module type Camera_sig = sig
   val get_right : t -> vec3
 end
 
-module Camera : Camera_sig with type vec3 = Vec3.t and type matr = Matr.t = struct
+module Camera : Camera_sig with type vec3 = Vec3.t and type matr = Matr.t =
+struct
   type vec3 = Vec3.t
   type matr = Matr.t
+
   type t = {
     loc : vec3;
     dir : vec3;
@@ -43,24 +45,34 @@ module Camera : Camera_sig with type vec3 = Vec3.t and type matr = Matr.t = stru
     let ratio_y = camera.size /. 2.0 in
     let ratio_x, ratio_y =
       if camera.frame_w >= camera.frame_h then
-        (ratio_x *. (float_of_int camera.frame_w /. float_of_int camera.frame_h), ratio_y)
+        ( ratio_x *. (float_of_int camera.frame_w /. float_of_int camera.frame_h),
+          ratio_y )
       else
-        (ratio_x, ratio_y *. (float_of_int camera.frame_h /. float_of_int camera.frame_w))
+        ( ratio_x,
+          ratio_y *. (float_of_int camera.frame_h /. float_of_int camera.frame_w)
+        )
     in
-    let proj = Matr.frustum (-.ratio_x) ratio_x (-.ratio_y) ratio_y camera.proj_dist camera.far_clip in
+    let proj =
+      Matr.frustum (-.ratio_x) ratio_x (-.ratio_y) ratio_y camera.proj_dist
+        camera.far_clip
+    in
     { camera with proj; vp = Matr.mult camera.view proj }
 
   let update_view camera =
     let view = Matr.view camera.loc camera.at camera.up in
     (* Extract the third row (z-axis) of the view matrix *)
-    let dir = Vec3.neg (Matr.get view 2 0, Matr.get view 2 1, Matr.get view 2 2) in
+    let dir =
+      Vec3.neg (Matr.get view 2 0, Matr.get view 2 1, Matr.get view 2 2)
+    in
     (* Extract the first row (x-axis) of the view matrix *)
-    let right = Vec3.neg (Matr.get view 0 0, Matr.get view 0 1, Matr.get view 0 2) in
+    let right =
+      Vec3.neg (Matr.get view 0 0, Matr.get view 0 1, Matr.get view 0 2)
+    in
     { camera with view; dir; right; vp = Matr.mult view camera.proj }
 
   let create () =
     let loc = (0.0, 0.0, 5.0) in
-    let dir = (0.0, 0.0, (-1.0)) in
+    let dir = (0.0, 0.0, -1.0) in
     let up = (0.0, 1.0, 0.0) in
     let right = (1.0, 0.0, 0.0) in
     let at = (0.0, 0.0, 0.0) in
@@ -69,12 +81,35 @@ module Camera : Camera_sig with type vec3 = Vec3.t and type matr = Matr.t = stru
     let size = 0.1 in
     let frame_w = 30 in
     let frame_h = 30 in
-    let view = Matr.translate (0.0, 0.0, (-3.0)) in
-    let camera = { loc; dir; up; right; at; proj_dist; far_clip; size; frame_w; frame_h; view; proj = Matr.identity(); vp = Matr.identity() } in
-    update_proj (camera)
+    let view = Matr.translate (0.0, 0.0, -3.0) in
+    let camera =
+      {
+        loc;
+        dir;
+        up;
+        right;
+        at;
+        proj_dist;
+        far_clip;
+        size;
+        frame_w;
+        frame_h;
+        view;
+        proj = Matr.identity ();
+        vp = Matr.identity ();
+      }
+    in
+    update_proj camera
 
   let set_proj camera new_size new_proj_dist new_far_clip =
-    let camera = { camera with size = new_size; proj_dist = new_proj_dist; far_clip = new_far_clip } in
+    let camera =
+      {
+        camera with
+        size = new_size;
+        proj_dist = new_proj_dist;
+        far_clip = new_far_clip;
+      }
+    in
     update_proj camera
 
   let resize camera new_frame_w new_frame_h =
@@ -87,7 +122,10 @@ module Camera : Camera_sig with type vec3 = Vec3.t and type matr = Matr.t = stru
 
   let rotate camera axis angle_deg =
     let rot_matrix = Matr.rotate axis angle_deg in
-    let at = Matr.point_transform rot_matrix (Vec3.sub camera.at camera.loc) |> Vec3.add camera.loc in
+    let at =
+      Matr.point_transform rot_matrix (Vec3.sub camera.at camera.loc)
+      |> Vec3.add camera.loc
+    in
     let up = Matr.vector_transform rot_matrix camera.up in
     set_loc_at_up camera camera.loc at up
 

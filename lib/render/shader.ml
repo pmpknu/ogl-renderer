@@ -1,4 +1,3 @@
-
 (* Helper function to create Bigarray *)
 let bigarray_create kind len = Bigarray.(Array1.create kind c_layout len)
 
@@ -22,8 +21,7 @@ let check_shader_compilation shader =
     for i = 0 to length - 1 do
       Bytes.set log_str i (Bigarray.Array1.get log i)
     done;
-    failwith ("Shader compilation failed: " ^ Bytes.to_string log_str)
-  )
+    failwith ("Shader compilation failed: " ^ Bytes.to_string log_str))
 
 (* Function to check program linking status *)
 let check_program_linking program =
@@ -39,8 +37,7 @@ let check_program_linking program =
     for i = 0 to length - 1 do
       Bytes.set log_str i (Bigarray.Array1.get log i)
     done;
-    failwith ("Program linking failed: " ^ Bytes.to_string log_str)
-  )
+    failwith ("Program linking failed: " ^ Bytes.to_string log_str))
 
 (* Function to create and compile a shader *)
 let create_shader shader_type source =
@@ -66,8 +63,7 @@ let create_shader_program vertex_src fragment_src =
   shader_program
 
 (* Function to use the shader program *)
-let use program =
-  Tgl3.Gl.use_program program
+let use program = Tgl3.Gl.use_program program
 
 (* Utility functions for setting uniform variables *)
 let set_uniform_bool program name value =

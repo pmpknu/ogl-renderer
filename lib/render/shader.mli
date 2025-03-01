@@ -1,7 +1,10 @@
-val bigarray_create : ('a, 'b) Bigarray.kind -> int -> (('a, 'b, Bigarray.c_layout) Bigarray.Array1.t)
+val bigarray_create :
+  ('a, 'b) Bigarray.kind -> int -> ('a, 'b, Bigarray.c_layout) Bigarray.Array1.t
 (** Helper function to create a Bigarray of given kind and length *)
 
-val get_int : ((int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t -> unit) -> int
+val get_int :
+  ((int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t -> unit) ->
+  int
 (** Helper function to get an integer value from OpenGL *)
 
 val check_shader_compilation : int -> unit
@@ -14,7 +17,8 @@ val create_shader : int -> string -> int
 (** Function to create and compile a shader *)
 
 val create_shader_program : string -> string -> int
-(** Function to create and link a shader program from vertex and fragment source *)
+(** Function to create and link a shader program from vertex and fragment source
+*)
 
 val use : int -> unit
 (** Function to use the shader program *)
