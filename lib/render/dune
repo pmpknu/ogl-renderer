@@ -1,4 +1,4 @@
 (library
  (name render)
- (modules shader texture mesh)
- (libraries math glfw-ocaml tgls.tgl3 stb_image))
+ (modules shader texture mesh model)
+ (libraries math glfw-ocaml tgls.tgl3 stb_image assimp))

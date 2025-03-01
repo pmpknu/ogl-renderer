@@ -24,6 +24,7 @@
   glfw-ocaml
   stb_image
   tgls
+  assimp
  )
  (tags
   ("opengl" "renderer" )))
