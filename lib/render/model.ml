@@ -16,10 +16,16 @@ module Model = struct
   let process_mesh mesh materials _scene_textures textures_loaded =
     let vertices = Array.mapi (fun i _ ->
       let pos = mesh.mesh_vertices.(i) in
-      let norm = try mesh.mesh_normals.(i) with _ -> [|0.;0.;0.|] in
-      let tex_coords = try mesh.mesh_texture_coords.(0).(i) with _ -> [|0.;0.;0.|] in
+      let norm = if i < Array.length mesh.mesh_normals
+                 then mesh.mesh_normals.(i) else [|0.;0.;0.|] in
+      let tex_coords = if Array.length mesh.mesh_texture_coords > 0
+                         && i < Array.length mesh.mesh_texture_coords.(0)
+                       then mesh.mesh_texture_coords.(0).(i) else [|0.;0.;0.|] in
       let tangent = try mesh.mesh_tangents.(i) with _ -> [|0.;0.;0.|] in
       let bitangent = try mesh.mesh_bitangents.(i) with _ -> [|0.;0.;0.|] in
+      Printf.printf "mesh_vertices length: %d\n" (Array.length mesh.mesh_vertices);
+      Printf.printf "mesh_normals length: %d\n" (Array.length mesh.mesh_normals);
+      Printf.printf "mesh_texture_coords length: %d\n" (Array.length mesh.mesh_texture_coords);
       Vertex.create
         ~position:(pos.(0), pos.(1), pos.(2))
         ~normal:(norm.(0), norm.(1), norm.(2))
@@ -53,20 +59,26 @@ module Model = struct
       load_tex texture_type_normals "texture_normal";
       load_tex texture_type_height "texture_height";
     ] in
-    (* The error is here - we're converting vertices to a list and then back to an array *)
     Mesh.create ~vertices 
     ~indices:(Array.of_list (Array.to_list indices))
     ~textures:(Array.of_list textures)
 
-  let rec process_node node scene textures_loaded =
-    let meshes = Array.fold_left (fun acc mesh_idx ->
-      let mesh = scene.scene_meshes.(mesh_idx) in
-      let materials = scene.scene_materials in
-      process_mesh mesh materials scene.scene_textures textures_loaded :: acc
-    ) [] node.node_meshes in
-    Array.fold_left (fun acc child ->
-      process_node child scene textures_loaded @ acc
-    ) meshes node.node_children
+    let process_node root_node scene textures_loaded =
+      let rec process_stack stack acc =
+        match stack with
+        | [] -> acc
+        | node :: rest ->
+          let meshes = Array.fold_left (fun acc mesh_idx ->
+            let mesh = scene.scene_meshes.(mesh_idx) in
+            let materials = scene.scene_materials in
+            process_mesh mesh materials scene.scene_textures textures_loaded :: acc
+          ) acc node.node_meshes in
+          let new_stack = Array.fold_left (fun stack child ->
+            child :: stack
+          ) rest node.node_children in
+          process_stack new_stack meshes
+      in
+      process_stack [root_node] []
 
   let aiProcess_Triangulate = 0x8
   let aiProcess_FlipUVs = 0x800000

@@ -2,6 +2,7 @@ open Render
 open Math.Mat
 open Math.Cam
 open Math.Vec
+open Model
 
 let glsl_version gl_version =
   match gl_version with
@@ -239,6 +240,9 @@ let () =
   Shader.use shaderProgram;
   Tgl3.Gl.uniform1i (Tgl3.Gl.get_uniform_location shaderProgram "texture1") 0;
 
+  (* Load the model *)
+  let model = Model.create "resources/cow.obj" false in
+
   while not (GLFW.windowShouldClose ~window) do
     process_input window;
 
@@ -254,7 +258,7 @@ let () =
 
     (* Set Uniforms *)
     (* Rotate the model matrix *)
-    let model = Matr.rotate (1.0, 0.0, 0.0) (-55.0) in
+    let model_matrix = Matr.rotate (1.0, 0.0, 0.0) (-55.0) in
 
     (* Create the projection matrix *)
     let camera = Camera.create () in
@@ -277,14 +281,12 @@ let () =
     in
 
     (* Pass the matrices to the shaders *)
-    Tgl3.Gl.uniform_matrix4fv model_loc 1 false (Matr.of_bigarray model);
+    Tgl3.Gl.uniform_matrix4fv model_loc 1 false (Matr.of_bigarray model_matrix);
     Tgl3.Gl.uniform_matrix4fv view_loc 1 false (Matr.of_bigarray view);
-    Tgl3.Gl.uniform_matrix4fv projection_loc 1 false
-      (Matr.of_bigarray projection);
+    Tgl3.Gl.uniform_matrix4fv projection_loc 1 false (Matr.of_bigarray projection);
 
-    (* Draw *)
-    Tgl3.Gl.bind_vertex_array vao;
-    Tgl3.Gl.draw_elements Tgl3.Gl.triangles 6 Tgl3.Gl.unsigned_int (`Offset 0);
+    (* Draw the model *)
+    Model.draw model shaderProgram;
 
     (*Tgl3.Gl.bind_vertex_array 0;*)
     GLFW.swapBuffers ~window;
