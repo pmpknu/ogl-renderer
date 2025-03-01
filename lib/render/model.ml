@@ -1,34 +1,23 @@
 open Assimp
 open Mesh
-open Texture
 
 module Model = struct
   type t = {
-    textures_loaded : Texture.t list;
+    textures_loaded : MeshTexture.t list;
     meshes : Mesh.t list;
     directory : string;
     gamma_correction : bool;
   }
 
   let load_texture directory path =
-    (* Simplified: Assume Texture.create handles loading from path *)
-    Texture.create ~id:0 ~type_:"" ~path:(Filename.concat directory path)
+    let texture_id = Texture.load_texture (Filename.concat directory path) in
+    MeshTexture.create ~id:texture_id ~type_:"" ~path:(Filename.concat directory path)
 
-  let rec process_node node scene textures_loaded =
-    let meshes = Array.fold_left (fun acc mesh_idx ->
-      let mesh = scene.scene_meshes.(mesh_idx) in
-      let materials = scene.scene_materials in
-      process_mesh mesh materials scene.scene_textures textures_loaded :: acc
-    ) [] node.node_meshes in
-    Array.fold_left (fun acc child ->
-      process_node child scene textures_loaded @ acc
-    ) meshes node.node_children
-
-  and process_mesh mesh materials scene_textures textures_loaded =
+  let process_mesh mesh materials _scene_textures textures_loaded =
     let vertices = Array.mapi (fun i _ ->
       let pos = mesh.mesh_vertices.(i) in
       let norm = try mesh.mesh_normals.(i) with _ -> [|0.;0.;0.|] in
-      let tex_coords = try mesh.mesh_texture_coords.(0).(i) with _ -> [|0.;0.|] in
+      let tex_coords = try mesh.mesh_texture_coords.(0).(i) with _ -> [|0.;0.;0.|] in
       let tangent = try mesh.mesh_tangents.(i) with _ -> [|0.;0.;0.|] in
       let bitangent = try mesh.mesh_bitangents.(i) with _ -> [|0.;0.;0.|] in
       Vertex.create
@@ -40,20 +29,20 @@ module Model = struct
         ~bone_ids:[|0;0;0;0|]
         ~weights:[|0.;0.;0.;0.|]
     ) mesh.mesh_vertices in
-
+  
     let indices = Array.concat (Array.to_list (Array.map (fun f -> f) mesh.mesh_faces)) in
-
-    let material = materials.(mesh.material_index) in
+  
+    let material = materials.(0) in
     let load_tex tex_type type_name =
       Array.fold_left (fun acc prop ->
         if prop.prop_semantic = tex_type then
           let path = prop.prop_data in
-          if List.exists (fun t -> t.Texture.path = path) !textures_loaded then
+          if List.exists (fun t -> MeshTexture.path t = path) !textures_loaded then
             acc
           else
             let tex = load_texture "" path in
             textures_loaded := tex :: !textures_loaded;
-            { tex with type_ = type_name } :: acc
+            { tex with MeshTexture.type_ = type_name } :: acc
         else acc
       ) [] material
     in
@@ -64,11 +53,23 @@ module Model = struct
       load_tex texture_type_normals "texture_normal";
       load_tex texture_type_height "texture_height";
     ] in
+    (* The error is here - we're converting vertices to a list and then back to an array *)
+    Mesh.create ~vertices 
+    ~indices:(Array.of_list (Array.to_list indices))
+    ~textures:(Array.of_list textures)
 
-    Mesh.create ~vertices:(Array.to_list vertices) 
-      ~indices:(Array.to_list indices) 
-      ~textures
+  let rec process_node node scene textures_loaded =
+    let meshes = Array.fold_left (fun acc mesh_idx ->
+      let mesh = scene.scene_meshes.(mesh_idx) in
+      let materials = scene.scene_materials in
+      process_mesh mesh materials scene.scene_textures textures_loaded :: acc
+    ) [] node.node_meshes in
+    Array.fold_left (fun acc child ->
+      process_node child scene textures_loaded @ acc
+    ) meshes node.node_children
 
+  let aiProcess_Triangulate = 0x8
+  let aiProcess_FlipUVs = 0x800000
   let load_model path gamma =
     match import_file path (aiProcess_Triangulate lor aiProcess_FlipUVs) with
     | Error (`Msg e) -> failwith ("Assimp error: " ^ e)

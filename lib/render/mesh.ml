@@ -27,7 +27,7 @@ module Vertex = struct
 end
 
 (** Texture module for ASSIMP, for Texture loading from file use texture.ml *)
-module Texture = struct
+module MeshTexture = struct
   type t = { id : int; type_ : string; path : string }
 
   let create ~id ~type_ ~path = { id; type_; path }
@@ -41,7 +41,7 @@ module Mesh = struct
   type t = {
     vertices : Vertex.t array;
     indices : int array;
-    textures : Texture.t array;
+    textures : MeshTexture.t array;
     vao : int;
     vbo : int;
     ebo : int;
@@ -155,16 +155,16 @@ module Mesh = struct
       (fun i texture ->
         Gl.active_texture (Gl.texture0 + i);
         let number =
-          match texture.Texture.type_ with
+          match texture.MeshTexture.type_ with
           | "texture_diffuse" -> string_of_int !diffuse_nr
           | "texture_specular" -> string_of_int !specular_nr
           | "texture_normal" -> string_of_int !normal_nr
           | "texture_height" -> string_of_int !height_nr
           | _ -> ""
         in
-        let name = texture.Texture.type_ ^ number in
+        let name = texture.MeshTexture.type_ ^ number in
         Shader.set_uniform_int shaderId name i;
-        Gl.bind_texture Gl.texture_2d texture.Texture.id)
+        Gl.bind_texture Gl.texture_2d texture.MeshTexture.id)
       mesh.textures;
 
     (* Draw mesh *)

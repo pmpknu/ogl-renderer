@@ -23,8 +23,12 @@ module Vertex : sig
 end
 
 (** Represents a texture with an ID, type, and file path. *)
-module Texture : sig
-  type t
+module MeshTexture : sig
+  type t = {
+    id : int;
+    type_ : string;
+    path : string;
+  }
 
   val create : id:int -> type_:string -> path:string -> t
   val id : t -> int
@@ -39,7 +43,7 @@ module Mesh : sig
   val create :
     vertices:Vertex.t array ->
     indices:int array ->
-    textures:Texture.t array ->
+    textures:MeshTexture.t array ->
     t
 
   val draw : t -> int -> unit

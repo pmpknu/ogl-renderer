@@ -16,6 +16,7 @@ depends: [
   "glfw-ocaml"
   "stb_image"
   "tgls"
+  "assimp"
   "odoc" {with-doc}
 ]
 build: [
