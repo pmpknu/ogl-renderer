@@ -63,22 +63,24 @@ module Model = struct
     ~indices:(Array.of_list (Array.to_list indices))
     ~textures:(Array.of_list textures)
 
-    let process_node root_node scene textures_loaded =
-      let rec process_stack stack acc =
-        match stack with
-        | [] -> acc
-        | node :: rest ->
-          let meshes = Array.fold_left (fun acc mesh_idx ->
-            let mesh = scene.scene_meshes.(mesh_idx) in
-            let materials = scene.scene_materials in
-            process_mesh mesh materials scene.scene_textures textures_loaded :: acc
-          ) acc node.node_meshes in
-          let new_stack = Array.fold_left (fun stack child ->
-            child :: stack
-          ) rest node.node_children in
-          process_stack new_stack meshes
-      in
-      process_stack [root_node] []
+    (* Iterative version using an explicit stack *)
+    let process_node scene textures_loaded =
+      let meshes = ref [] in
+      let stack = Stack.create () in
+      Stack.push scene.scene_root stack;
+      while not (Stack.is_empty stack) do
+        let node = Stack.pop stack in
+        Array.iter (fun mesh_idx ->
+          let mesh = scene.scene_meshes.(mesh_idx) in
+          let processed_mesh = process_mesh mesh scene.scene_materials scene.scene_textures textures_loaded in
+          meshes := processed_mesh :: !meshes
+        ) node.node_meshes;
+        for i = Array.length node.node_children - 1 downto 0 do
+          Stack.push node.node_children.(i) stack
+        done
+      done;
+
+      Array.of_list (List.rev !meshes)
 
   let aiProcess_Triangulate = 0x8
   let aiProcess_FlipUVs = 0x800000
@@ -88,7 +90,7 @@ module Model = struct
     | Ok raw_scene ->
       let scene = view_scene raw_scene in
       let textures_loaded = ref [] in
-      let meshes = process_node scene.scene_root scene textures_loaded in
+      let meshes = Array.to_list (process_node scene textures_loaded) in
       release_scene raw_scene;
       { textures_loaded = !textures_loaded; meshes; 
         directory = Filename.dirname path; gamma_correction = gamma }
